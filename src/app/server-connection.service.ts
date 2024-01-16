@@ -1,18 +1,16 @@
 import { Injectable } from '@angular/core';
-
+import { RsaPubKey } from './rsa/RsaPubKey';
 @Injectable({
   providedIn: 'root'
 })
 export class ServerConnectionService {
-  private publicKey: any;
+  private publicKey!: RsaPubKey;
 
-
-
-  getPublicKey(): any {
+  getPublicKey(): RsaPubKey {
     return this.publicKey;
   }
 
-  setPublicKey(pubKey: any): void {
+  setPublicKey(pubKey: RsaPubKey): void {
     this.publicKey = pubKey;
   }
   readonly baseUrl
