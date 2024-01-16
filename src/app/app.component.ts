@@ -29,8 +29,10 @@ export class AppComponent implements OnInit{
 
   encryptForm: FormGroup;
   decryptForm: FormGroup;
+  signForm: FormGroup;
   encryptResponse: any;
   decryptResponse: any;
+  signStatus: any;
 
   constructor(serverConnectionService: ServerConnectionService) {
     this.serverConnectionService = serverConnectionService;
@@ -42,71 +44,40 @@ export class AppComponent implements OnInit{
     this.decryptForm = new FormGroup({
       encryptedMessage: new FormControl('')
     });
+
+    this.signForm = new FormGroup({
+      signMessage: new FormControl('')
+    });
   }
 
     ngOnInit(): void {
-    // Call the getRSA method when the component initializes
     this.getRSA();
   }
 
-  // async encryptMessage() {
-
-
-
-  //   const messageToEncrypt = this.encryptForm.value.messageToEncrypt;
-
-  //   const response = await this.serverConnectionService.postJson<RequestMsg, ResponseMsg>('/encrypt', {
-  //     message: messageToEncrypt
-  //   });
-
-  //   this.encryptResponse = response.error ?? response.ciphertext;
-  // }
-
-  // async decryptMessage() {
-  //   const encryptedMessage = this.decryptForm.value.encryptedMessage;
-
-  //   const response = await this.serverConnectionService.postJson<RequestMsg, ResponseMsg>('/decrypt', {
-  //     encryptedMessage: encryptedMessage
-  //   });
-
-  //   this.decryptResponse = response.error ?? response.decryptedMessage;
-  // }
-
   async encryptMessage() {
     const e = this.serverConnectionService.getPublicKey().e
-    // console.log('pubkey E:', base64ToBigint(e))
   try {
-    // Get the public key from the service
     const pubKey = this.serverConnectionService.getPublicKey();
 
     if (!pubKey) {
       console.error('Public key not available.');
       return;
     }
-
-    // Create an instance of RsaPubKey
     const rsaPubKey = new RsaPubKey(pubKey.e, pubKey.n);
 
-    // Get the message to encrypt from the form
     const messageToEncrypt = this.encryptForm.value.messageToEncrypt;
 
-    // Encrypt the message using the public key
     const encryptedMessage = rsaPubKey.encrypt(textToBigint(messageToEncrypt));
 
-    // Optionally, you can convert the encrypted message to base64 or any other format
     const encryptedMessageBase64 = bigintToBase64(encryptedMessage) ;
-    // const encryptedMessageBase64 = encryptedMessage.toString();
     console.log('LO QUE ENVIO: ', encryptedMessageBase64)
-    // Send the encrypted message to the server
-    // const response = await this.serverConnectionService.postJson<RequestMsg, ResponseMsg>('/encrypt', {
-    //   message: encryptedMessageBase64,
-    // });
+
 
     const response = await this.serverConnectionService.postJson<RequestMsg, ResponseMsg>('/decrypt', {
       encryptedMessage: encryptedMessageBase64,
     });
 
-    console.log('LO QUE ENVIO: ', response)
+    console.log('LO QUE RECIBO: ', response)
     this.encryptResponse = response.error ?? response.ciphertext;
   } catch (error) {
     console.error('Error encrypting message:', error);
@@ -115,25 +86,47 @@ export class AppComponent implements OnInit{
 
   async getRSA() {
     try {
-      // Make a request to the server to get the RSA key
       const response = await this.serverConnectionService.getJson<any, any>('/getRSA', {});
-
-      // Check if the response contains a public key
       if (response && response.pubKey) {
-        // Store the public key in the service
         const e = response.pubKey.e
-        // console.log('EEEE:', base64ToBigint(e))
         const n = response.pubKey.n
         const pubKeyFix = new RsaPubKey(base64ToBigint(e), base64ToBigint(n))
         this.serverConnectionService.setPublicKey(pubKeyFix);
-
-        // Log the stored public key (optional)
         console.log('Public key stored in the client:', this.serverConnectionService.getPublicKey());
       } else {
         console.error('Error getting RSA key from the server:', response.error);
       }
     } catch (error) {
       console.error('Error getting RSA key:', error);
+    }
+  }
+
+  async signMessage() {
+    try {
+      const pubKey = this.serverConnectionService.getPublicKey();
+      if (!pubKey) {
+        console.error('Public key not available.');
+        return;
+      }
+      const rsaPubKey = new RsaPubKey(pubKey.e, pubKey.n);
+      const messageToSign = this.signForm.value.signMessage;
+      console.log('FIRMA:', messageToSign)
+      const response = await this.serverConnectionService.postJson<RequestMsg, any>('/sign', {
+        message: messageToSign,
+      });
+      console.log(typeof response)
+      console.log('lo que recibo en res: ', response)
+      const a = base64ToBigint(response.msgFirmado)
+      const status2 = pubKey.verify(a)
+      console.log('LO QUE RECIBO: ', status2)
+      if (status2 == messageToSign){
+        this.signStatus = '🤙'
+      }
+      else{
+        this.signStatus = '😞'
+      }
+    } catch (error) {
+      console.error('Error verifaig message:', error);
     }
   }
 }

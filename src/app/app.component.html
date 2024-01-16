@@ -2,18 +2,17 @@
   <form [formGroup]="encryptForm" (submit)="encryptMessage()">
     <label for="messageToEncrypt">Message to Encrypt:</label>
     <input id="messageToEncrypt" type="text" formControlName="messageToEncrypt">
-    <button type="submit" class="primary">Encrypt</button>
+    <button type="submit" class="primary">Encrypt 😞🤙</button>
   </form>
   <div>
     <p>Encrypted Message: {{ encryptResponse }}</p>
   </div>
-
-  <!-- <form [formGroup]="decryptForm" (submit)="decryptMessage()">
-    <label for="encryptedMessage">Encrypted Message:</label>
-    <input id="encryptedMessage" type="text" formControlName="encryptedMessage">
-    <button type="submit" class="primary">Decrypt</button>
-  </form> -->
+  <form [formGroup]="signForm" (submit)="signMessage()">
+    <label for="signMessage">Message to Sign:</label>
+    <input id="signMessage" type="text" formControlName="signMessage">
+    <button type="submit" class="primary">Sign 🫥</button>
+  </form>
   <div>
-    <p>Decrypted Message: {{ decryptResponse }}</p>
+    <p>Status Sign: {{ signStatus }}</p>
   </div>
 </main>
