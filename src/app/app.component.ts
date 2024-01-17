@@ -23,19 +23,36 @@ interface ResponseMsg {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
+
 export class AppComponent implements OnInit{
   title = 'angular-client';
   serverConnectionService: ServerConnectionService;
-
   encryptForm: FormGroup;
   decryptForm: FormGroup;
   signForm: FormGroup;
+  inputForm: FormGroup;
   encryptResponse: any;
   decryptResponse: any;
   signStatus: any;
+  secretShamir:any;
+  arrayOfItems: string[] = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6', 'Item 7', 'Item 8', 'Item 9', 'Item 10'];
+
 
   constructor(serverConnectionService: ServerConnectionService) {
     this.serverConnectionService = serverConnectionService;
+
+    this.inputForm = new FormGroup({
+      input1: new FormControl(''),
+      input2: new FormControl(''),
+      input3: new FormControl(''),
+      input4: new FormControl(''),
+      input5: new FormControl(''),
+      input6: new FormControl(''),
+      input7: new FormControl(''),
+      input8: new FormControl(''),
+      input9: new FormControl(''),
+      input10: new FormControl(''),
+    });
 
     this.encryptForm = new FormGroup({
       messageToEncrypt: new FormControl('')
@@ -54,6 +71,44 @@ export class AppComponent implements OnInit{
     this.getRSA();
   }
 
+  async submitInputStrings() {
+    try {
+      // Get all inputs from the form
+      const formValues: { [key: string]: string } = this.inputForm.value;
+  
+      // Filter out empty inputs
+      const nonEmptyInputs = Object.values(formValues).filter((value) => value !== '');
+  
+      // Check if there are non-empty inputs
+      if (nonEmptyInputs.length === 0) {
+        console.log('No non-empty inputs to submit.');
+        return;
+      }
+  
+      // Send only non-empty inputs as an array to the API
+      const dataToSend = {
+        shares: nonEmptyInputs,
+      };
+  
+      console.log('Secrets to send:', dataToSend);
+      const response = await this.serverConnectionService.postJson<any, any>('/recover', dataToSend);
+      console.log('Response from API:', response);
+    } catch (error) {
+      console.error('Error submitting input strings:', error);
+    }
+  }
+
+  async sendGetSecret() {
+    try {
+      const response = await this.serverConnectionService.getJson<any, any>('/secret', {});
+      console.log('Response from GET request:', response);
+      this.arrayOfItems = response.shares;
+      this.secretShamir = response.clave;
+    } catch (error) {
+      console.error('Error sending GET request:', error);
+    }
+  }
+
   async encryptMessage() {
     const e = this.serverConnectionService.getPublicKey().e
   try {
@@ -64,19 +119,13 @@ export class AppComponent implements OnInit{
       return;
     }
     const rsaPubKey = new RsaPubKey(pubKey.e, pubKey.n);
-
     const messageToEncrypt = this.encryptForm.value.messageToEncrypt;
-
     const encryptedMessage = rsaPubKey.encrypt(textToBigint(messageToEncrypt));
-
     const encryptedMessageBase64 = bigintToBase64(encryptedMessage) ;
     console.log('LO QUE ENVIO: ', encryptedMessageBase64)
-
-
     const response = await this.serverConnectionService.postJson<RequestMsg, ResponseMsg>('/decrypt', {
       encryptedMessage: encryptedMessageBase64,
     });
-
     console.log('LO QUE RECIBO: ', response)
     this.encryptResponse = response.error ?? response.ciphertext;
   } catch (error) {
